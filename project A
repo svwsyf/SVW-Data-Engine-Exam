@@ -1,1 +1,30 @@
+import requests
+import bs4 as sp
+import pandas as pd
+import re
 
+#车辆数据地址
+url = 'http://car.bitauto.com/xuanchegongju/?l=8&mid=8'
+
+#数据采集
+datasource = requests.get(url)
+
+#数据清洗！！
+soup = sp.BeautifulSoup(datasource.text,'html.parser')
+item_list = soup.find('div',class_ ='search-result-list')
+
+a_list = item_list.find_all('a')
+#定义输出标题
+pd_list = pd.DataFrame(columns=['名称','最低价格','最高价格','产品图片链接'])
+#循环获取符合条件的数据
+for i in range(len(a_list)):
+    p_list = a_list[i].find_all('p')
+    pattern = re.compile('[1-9]\d*.\d*|0.\d*[1-9]\d*')
+    price = pattern.findall(p_list[1].text)
+    if price == []:
+        pd_list.loc[i] = [p_list[0].text, p_list[1].text, p_list[1].text, 'http:' +a_list[i].img['src']]
+    else:
+        pd_list.loc[i] = [p_list[0].text, price[0] + '万', price[1] + '万', 'http:' + a_list[i].img['src']]
+
+#导出筛选好的数据
+pd_list.to_csv('Project A.csv',encoding='gbk')
